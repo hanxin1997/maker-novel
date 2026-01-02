@@ -1,10 +1,32 @@
 # ============================================
-# 单阶段构建：后端 + nginx（前端需本地预构建）
+# 多阶段构建：自动构建前端 + 后端 + nginx
 # ============================================
 # 使用方法：
-#   1. 本地执行: cd frontend && npm run build-only
-#   2. 然后执行: docker compose build
+#   1. 复制 .env.example 为 .env 并配置
+#   2. 运行: docker compose up -d --build
 # ============================================
+
+# ==================== 阶段1: 构建前端 ====================
+FROM node:20-slim AS frontend-builder
+
+# 配置 npm 使用中国镜像源
+RUN npm config set registry https://registry.npmmirror.com
+
+WORKDIR /frontend
+
+# 先复制依赖文件，利用 Docker 缓存
+COPY frontend/package*.json ./
+
+# 安装依赖
+RUN npm ci --prefer-offline
+
+# 复制前端源码
+COPY frontend/ ./
+
+# 构建前端（跳过类型检查以加速构建）
+RUN npm run build-only
+
+# ==================== 阶段2: 构建后端运行环境 ====================
 FROM python:3.11-slim
 
 # 配置 apt 使用中国镜像源
@@ -44,8 +66,8 @@ RUN mkdir -p /app/storage
 RUN mv /app/prompts /app/prompts-seed || mkdir -p /app/prompts-seed
 RUN mkdir -p /app/prompts
 
-# 从本地预构建的 dist 目录复制静态资源
-COPY frontend/dist /usr/share/nginx/html
+# 从阶段1复制构建好的前端静态资源
+COPY --from=frontend-builder /frontend/dist /usr/share/nginx/html
 
 # 复制部署配置
 COPY deploy/nginx.conf /etc/nginx/sites-available/default

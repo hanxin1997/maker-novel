@@ -3,21 +3,18 @@
 ## 快速启动
 
 ```bash
-# 1. 本地构建前端（开发机上执行）
-cd frontend && npm run build-only
-
-# 2. 复制环境变量配置
+# 1. 复制环境变量配置
 cd deploy && cp .env.example .env
 
-# 3. 编辑 .env，至少修改以下必填项
+# 2. 编辑 .env，至少修改以下必填项
 #    - SECRET_KEY（安全密钥）
 #    - OPENAI_API_KEY（LLM API密钥）
 
-# 4. 构建并启动服务
+# 3. 一键构建并启动服务
 docker compose up -d --build
 ```
 
-> **注意**：前端需要在本地预构建，Docker 只负责后端和部署。
+> **说明**：采用多阶段构建，前端会在 Docker 内自动编译，无需本地安装 Node.js 环境。
 
 ## 数据持久化
 
